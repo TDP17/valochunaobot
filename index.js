@@ -1,5 +1,7 @@
-// Require the necessary discord.js classes
 const { Client, GatewayIntentBits } = require("discord.js");
+
+const dotenv = require("dotenv");
+dotenv.config();
 
 const client = new Client({
   intents: [
@@ -115,6 +117,4 @@ client.on("messageCreate", (msg) => {
   }
 });
 
-client.login(
-  "MTAwNDQxNjE0OTU2OTY2NzEzMw.G7_T4L.KJD9jArRfQ4CXYC173XeoDJ_-gaO2HbYZpFwM8"
-); // Dont chori this sir fod dunga
+client.login(process.env.BOT_ID);
