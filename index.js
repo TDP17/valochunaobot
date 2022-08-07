@@ -3,6 +3,8 @@ const { Client, GatewayIntentBits } = require("discord.js");
 const dotenv = require("dotenv");
 dotenv.config();
 
+const { reactionMessage, roleString, botUsername } = require("./constant.js");
+
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -14,14 +16,11 @@ const client = new Client({
   ],
 });
 
-const reactionMessage = "React with a 👍 to signup for tonight";
-const roleString = "1004490463400689798";
-const botUsername = "ValoChunaoBot";
-
 client.once("ready", () => {
-  console.log("Ready!");
+  console.log("Bot running!");
 });
 
+// Vars
 let timeToEnd; // Time to end option collected from user
 
 client.on("interactionCreate", async (interaction) => {
@@ -32,69 +31,85 @@ client.on("interactionCreate", async (interaction) => {
 
   const { commandName } = interaction;
 
-  if (commandName === "randomize") {
-    const list = [];
+  switch (commandName) {
+    case "randomize": {
+      const signupsList = [];
 
-    const allMembers = await interaction.guild.members.fetch();
-
-    const memberIt = allMembers.values();
-
-    let result = memberIt.next();
-    while (!result.done) {
-      const temp = result.value._roles;
-      const size = Object.keys(temp).length;
-      for (let i = 0; i < size; i++) {
-        if (
-          temp[i] === roleToAdd.id &&
-          result.value.user.username != botUsername
-        )
-          list.push(result.value.user.username);
+      // Gets list of members who have the role in membersList
+      const allMembers = await interaction.guild.members.fetch();
+      const memberIterator = allMembers.values();
+      let result = memberIterator.next();
+      while (!result.done) {
+        const temp = result.value._roles;
+        const size = Object.keys(temp).length;
+        for (let i = 0; i < size; i++) {
+          if (
+            temp[i] === roleToAdd.id &&
+            result.value.user.username != botUsername
+          )
+            signupsList.push(result.value.user.username);
+        }
+        result = memberIterator.next();
       }
-      result = memberIt.next();
-    }
 
-    for (let i = list.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [list[i], list[j]] = [list[j], list[i]];
-    }
-
-    const firstList = list.slice(0, 5);
-    let secondList;
-    if (list.length > 5) {
-      secondList = list.slice(5, 10);
-    }
-
-    await interaction.reply(
-      `First List: \`${firstList.join(" ")}\`\n${
-        list.length > 5 ? `Second List: \`${secondList.join(" ")}\`` : ""
-      }`
-    );
-  } else if (commandName === "signups") {
-    timeToEnd = interaction.options.getInteger("time");
-    const allMembers = await interaction.guild.members.fetch();
-    const memberIt = allMembers.values();
-
-    const message = await interaction.reply({
-      content: reactionMessage,
-      fetchReply: true,
-    });
-    message.react("👍");
-  } else if (commandName === "removeroles") {
-    const allMembers = await interaction.guild.members.fetch();
-    const memberIt = allMembers.values();
-    let result = memberIt.next();
-    while (!result.done) {
-      const temp = result.value._roles;
-      const size = Object.keys(temp).length;
-      for (let i = 0; i < size; i++) {
-        if (temp[i] === roleToAdd.id) result.value.roles.remove(roleToAdd);
+      // Randomizes membersList
+      for (let i = signupsList.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [signupsList[i], signupsList[j]] = [signupsList[j], signupsList[i]];
       }
-      result = memberIt.next();
+
+      // Constructs a reply for the bot dynamically with added discord formatting
+      let listReply = "```";
+      if (signupsList.length > 0)
+        listReply += `\n1.${signupsList.slice(0, 5).join(", ")}\n`;
+      else listReply += `No signups found`;
+      if (signupsList.length > 5)
+        listReply += `2.${signupsList.slice(5, 10).join(", ")}\n`;
+      if (signupsList.length > 10)
+        listReply += `3.${signupsList.slice(10, 15).join(", ")}\n`;
+      listReply += "```";
+
+      await interaction.reply(listReply);
+      break;
     }
-    const message = await interaction.reply("Removes roles");
+    case "signups": {
+      timeToEnd = interaction.options.getInteger("time");
+
+      const message = await interaction.reply({
+        content: reactionMessage,
+        fetchReply: true,
+      });
+
+      message.react("👍");
+      break;
+    }
+    case "removeroles": {
+      // Fetches all members to check for role
+      const allMembers = await interaction.guild.members.fetch();
+      const memberIt = allMembers.values();
+      let result = memberIt.next();
+      while (!result.done) {
+        const temp = result.value._roles;
+        const size = Object.keys(temp).length;
+
+        // Checks role list of given user
+        for (let i = 0; i < size; i++) {
+          if (temp[i] === roleToAdd.id) result.value.roles.remove(roleToAdd);
+        }
+        result = memberIt.next();
+      }
+
+      await interaction.reply("Removed roles");
+      break;
+    }
+    default:
+      break;
   }
 });
 
+/**
+ * @todo Start reaction collector on interaction instead of message to remove dependency on constant reactionMessage
+ */
 client.on("messageCreate", (msg) => {
   if (msg.content === reactionMessage) {
     const collector = msg.createReactionCollector({ time: timeToEnd });
@@ -109,10 +124,6 @@ client.on("messageCreate", (msg) => {
         const member = await guild.members.fetch(user.id);
         member.roles.add(roleToAdd);
       }
-    });
-
-    collector.on("end", (collected) => {
-      console.log(`Collected ${collected.size} items`);
     });
   }
 });
