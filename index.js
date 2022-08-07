@@ -110,19 +110,28 @@ client.on("interactionCreate", async (interaction) => {
 /**
  * @todo Start reaction collector on interaction instead of message to remove dependency on constant reactionMessage
  */
-client.on("messageCreate", (msg) => {
+client.on("messageCreate", async (msg) => {
+  const guild = msg.guild;
+  const allRoles = await guild.roles.fetch();
+  const roleToManage = allRoles.get(roleString);
+
   if (msg.content === reactionMessage) {
-    const collector = msg.createReactionCollector({ time: timeToEnd });
+    const collector = msg.createReactionCollector({
+      time: timeToEnd,
+      dispose: true,
+    });
 
     collector.on("collect", async (reaction, user) => {
       if (reaction.emoji.name === "👍") {
-        const guild = msg.guild;
-
-        const allRoles = await guild.roles.fetch();
-        const roleToAdd = allRoles.get(roleString);
-
         const member = await guild.members.fetch(user.id);
-        member.roles.add(roleToAdd);
+        member.roles.add(roleToManage);
+      }
+    });
+
+    collector.on("remove", async (reaction, user) => {
+      if (reaction.emoji.name === "👍") {
+        const member = await guild.members.fetch(user.id);
+        member.roles.remove(roleToManage);
       }
     });
   }
