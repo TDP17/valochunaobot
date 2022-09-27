@@ -122,10 +122,11 @@ client.on("messageCreate", async (msg) => {
     });
 
     collector.on("collect", async (reaction, user) => {
+      console.log("Reaction collected", reaction.emoji.name, user.username);
       if (reaction.emoji.name === "👍") {
         const member = await guild.members.fetch(user.id);
         member.roles.add(roleToManage);
-        console.log("Added member", member);
+        console.log("Added member", member.user.username);
       }
     });
 
