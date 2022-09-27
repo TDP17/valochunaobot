@@ -125,6 +125,7 @@ client.on("messageCreate", async (msg) => {
       if (reaction.emoji.name === "👍") {
         const member = await guild.members.fetch(user.id);
         member.roles.add(roleToManage);
+        console.log("Added member", member);
       }
     });
 
