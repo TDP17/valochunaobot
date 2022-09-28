@@ -125,8 +125,13 @@ client.on("messageCreate", async (msg) => {
       console.log("Reaction collected", reaction.emoji.name, user.username);
       if (reaction.emoji.name === "👍") {
         const member = await guild.members.fetch(user.id);
-        member.roles.add(roleToManage);
-        console.log("Added member", member.user.username);
+        try {
+          member.roles.add(roleToManage);
+          console.log("Added member", member.user.username);
+          console.log(member.roles);
+        } catch (error) {
+          console.log(error);
+        }
       }
     });
 
