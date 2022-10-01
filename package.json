@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node deploy-commands.js && node index.js",
+    "devStart": "nodemon index.js",
     "test": "node index.js",
     "slash": "node deploy-commands.js"
   },
@@ -15,5 +16,8 @@
     "@discordjs/rest": "^1.0.1",
     "discord.js": "^14.1.2",
     "dotenv": "^16.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.20"
   }
 }

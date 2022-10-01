@@ -20,9 +20,6 @@ client.once("ready", () => {
   console.log("Bot running!");
 });
 
-// Vars
-let timeToEnd; // Time to end option collected from user
-
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
@@ -73,8 +70,6 @@ client.on("interactionCreate", async (interaction) => {
       break;
     }
     case "signups": {
-      timeToEnd = interaction.options.getInteger("time");
-
       const message = await interaction.reply({
         content: reactionMessage,
         fetchReply: true,
@@ -117,7 +112,6 @@ client.on("messageCreate", async (msg) => {
 
   if (msg.content === reactionMessage) {
     const collector = msg.createReactionCollector({
-      time: timeToEnd,
       dispose: true,
     });
 
@@ -126,9 +120,13 @@ client.on("messageCreate", async (msg) => {
       if (reaction.emoji.name === "👍") {
         const member = await guild.members.fetch(user.id);
         try {
-          member.roles.add(roleToManage);
-          console.log("Added member", member.user.username);
-          console.log(member.roles);
+          const newMember = await member.roles.add(roleToManage);
+          console.log(member.user.username);
+          console.log("Roles given ", newMember._roles);
+          const named_roles_array = newMember._roles.map((item) => {
+            return allRoles.get(item).name;
+          });
+          console.log(named_roles_array);
         } catch (error) {
           console.log(error);
         }
