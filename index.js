@@ -122,7 +122,6 @@ client.on("messageCreate", async (msg) => {
         try {
           const newMember = await member.roles.add(roleToManage);
           console.log(member.user.username);
-          console.log("Roles given ", newMember._roles);
           const named_roles_array = newMember._roles.map((item) => {
             return allRoles.get(item).name;
           });
