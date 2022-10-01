@@ -19,9 +19,6 @@ const commands = [
   new SlashCommandBuilder()
     .setName("signups")
     .setDescription("Starts collection of names")
-    .addIntegerOption((option) =>
-      option.setName("time").setDescription("The time to signups end in ms")
-    ),
 ].map((command) => command.toJSON());
 
 const rest = new REST({ version: "10" }).setToken(process.env.BOT_ID);
