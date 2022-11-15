@@ -18,7 +18,7 @@ const commands = [
     .setDescription("Removes roles from all"),
   new SlashCommandBuilder()
     .setName("signups")
-    .setDescription("Starts collection of names")
+    .setDescription("Starts collection of names"),
 ].map((command) => command.toJSON());
 
 const rest = new REST({ version: "10" }).setToken(process.env.BOT_ID);

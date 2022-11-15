@@ -1,9 +1,21 @@
 const { Client, GatewayIntentBits } = require("discord.js");
 
 const dotenv = require("dotenv");
+const {
+  removeRole,
+  addRole,
+  collectList,
+  randomizeList,
+  createReply,
+  removeRoleFromAllUsers,
+} = require("./services/methods.js");
 dotenv.config();
 
-const { reactionMessage, roleString, botUsername } = require("./constant.js");
+const {
+  reactionMessage,
+  roleString,
+  rudiString,
+} = require("./utils/constant.js");
 
 const client = new Client({
   intents: [
@@ -16,56 +28,31 @@ const client = new Client({
   ],
 });
 
-client.once("ready", () => {
-  console.log("Bot running!");
+let allRoles;
+let guild;
+let roleToAdd = "";
+client.once("ready", async (c) => {
+  try {
+    guild = await c.guilds.fetch(rudiString);
+    allRoles = await guild.roles.fetch();
+    roleToAdd = allRoles.get(roleString);
+    console.info("Bot running!");
+  } catch (error) {
+    console.error(error);
+  }
 });
 
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
-  const allRoles = await interaction.guild.roles.fetch();
-  const roleToAdd = allRoles.get(roleString);
-
   const { commandName } = interaction;
 
   switch (commandName) {
     case "randomize": {
-      const signupsList = [];
-
-      // Gets list of members who have the role in membersList
-      const allMembers = await interaction.guild.members.fetch();
-      const memberIterator = allMembers.values();
-      let result = memberIterator.next();
-      while (!result.done) {
-        const temp = result.value._roles;
-        const size = Object.keys(temp).length;
-        for (let i = 0; i < size; i++) {
-          if (
-            temp[i] === roleToAdd.id &&
-            result.value.user.username != botUsername
-          )
-            signupsList.push(result.value.user.username);
-        }
-        result = memberIterator.next();
-      }
-
-      // Randomizes membersList
-      for (let i = signupsList.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [signupsList[i], signupsList[j]] = [signupsList[j], signupsList[i]];
-      }
-
-      // Constructs a reply for the bot dynamically with added discord formatting
-      let listReply = "```";
-      if (signupsList.length > 0)
-        listReply += `\n1.${signupsList.slice(0, 5).join(", ")}\n`;
-      else listReply += `No signups found`;
-      if (signupsList.length > 5)
-        listReply += `2.${signupsList.slice(5, 10).join(", ")}\n`;
-      if (signupsList.length > 10)
-        listReply += `3.${signupsList.slice(10, 15).join(", ")}\n`;
-      listReply += "```";
-
+      const signupsList = await randomizeList(
+        collectList(interaction, roleToAdd)
+      );
+      const listReply = createReply(signupsList);
       await interaction.reply(listReply);
       break;
     }
@@ -74,26 +61,11 @@ client.on("interactionCreate", async (interaction) => {
         content: reactionMessage,
         fetchReply: true,
       });
-
       message.react("👍");
       break;
     }
     case "removeroles": {
-      // Fetches all members to check for role
-      const allMembers = await interaction.guild.members.fetch();
-      const memberIt = allMembers.values();
-      let result = memberIt.next();
-      while (!result.done) {
-        const temp = result.value._roles;
-        const size = Object.keys(temp).length;
-
-        // Checks role list of given user
-        for (let i = 0; i < size; i++) {
-          if (temp[i] === roleToAdd.id) result.value.roles.remove(roleToAdd);
-        }
-        result = memberIt.next();
-      }
-
+      removeRoleFromAllUsers(interaction, roleToAdd);
       await interaction.reply("Removed roles");
       break;
     }
@@ -103,40 +75,26 @@ client.on("interactionCreate", async (interaction) => {
 });
 
 /**
- * @todo Start reaction collector on interaction instead of message to remove dependency on constant reactionMessage
+ * Listener for the creation of a message in the guild, receives the msg object
+ * @todo Probably refactor the retrieval of guild &roleToManage to be called on the start of a command only once instead of on every message
+ * Something like
+ *  client.once("ready", () => {
+ *    console.log("Bot running!");
+ *    Retrieve guild and role to manage here itself
+ *  });
  */
 client.on("messageCreate", async (msg) => {
-  const guild = msg.guild;
-  const allRoles = await guild.roles.fetch();
-  const roleToManage = allRoles.get(roleString);
-
   if (msg.content === reactionMessage) {
     const collector = msg.createReactionCollector({
       dispose: true,
     });
 
     collector.on("collect", async (reaction, user) => {
-      console.log("Reaction collected", reaction.emoji.name, user.username);
-      if (reaction.emoji.name === "👍") {
-        const member = await guild.members.fetch(user.id);
-        try {
-          const newMember = await member.roles.add(roleToManage);
-          console.log(member.user.username);
-          const named_roles_array = newMember._roles.map((item) => {
-            return allRoles.get(item).name;
-          });
-          console.log(named_roles_array);
-        } catch (error) {
-          console.log(error);
-        }
-      }
+      addRole(reaction, user, allRoles, roleString, guild);
     });
 
     collector.on("remove", async (reaction, user) => {
-      if (reaction.emoji.name === "👍") {
-        const member = await guild.members.fetch(user.id);
-        member.roles.remove(roleToManage);
-      }
+      removeRole(reaction, user, roleToAdd);
     });
   }
 });
