@@ -1,5 +1,4 @@
 const { Client, GatewayIntentBits } = require("discord.js");
-
 const dotenv = require("dotenv");
 const {
   removeRole,
@@ -8,14 +7,15 @@ const {
   randomizeList,
   createReply,
   removeRoleFromAllUsers,
+  registerUser,
 } = require("./services/methods.js");
-dotenv.config();
-
 const {
   reactionMessage,
   roleString,
   rudiString,
 } = require("./utils/constant.js");
+const { db } = require("./database/initDB.js");
+dotenv.config();
 
 const client = new Client({
   intents: [
@@ -36,6 +36,9 @@ client.once("ready", async (c) => {
     guild = await c.guilds.fetch(rudiString);
     allRoles = await guild.roles.fetch();
     roleToAdd = allRoles.get(roleString);
+
+    await db.connect();
+    
     console.info("Bot running!");
   } catch (error) {
     console.error(error);
@@ -67,6 +70,15 @@ client.on("interactionCreate", async (interaction) => {
     case "removeroles": {
       removeRoleFromAllUsers(interaction, roleToAdd);
       await interaction.reply("Removed roles");
+      break;
+    }
+    case "register": {
+      const name = interaction.options.getString("name");
+      const tag = interaction.options.getString("tag");
+
+      registerUser(db, interaction.user.username, name, tag);
+
+      await interaction.reply("O K");
       break;
     }
     default:

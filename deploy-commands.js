@@ -19,6 +19,21 @@ const commands = [
   new SlashCommandBuilder()
     .setName("signups")
     .setDescription("Starts collection of names"),
+  new SlashCommandBuilder()
+    .setName("register")
+    .setDescription("Register for valo chunao bot")
+    .addStringOption((option) =>
+      option
+        .setName("name")
+        .setDescription("Your in game name")
+        .setRequired(true)
+    )
+    .addStringOption((option) =>
+      option
+        .setName("tag")
+        .setDescription("Your in game tag (4 numbers without #)")
+        .setRequired(true)
+    ),
 ].map((command) => command.toJSON());
 
 const rest = new REST({ version: "10" }).setToken(process.env.BOT_ID);
