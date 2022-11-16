@@ -117,9 +117,27 @@ const removeRoleFromAllUsers = async (interaction, roleToAdd) => {
   }
 };
 
+/**
+ * @param {*} db - database client of mongodb
+ * @param {*} username - username of the person who used the interaction
+ * @param {*} name - valorant in game name 
+ * @param {*} tag - valornat in game tag
+ */
+const registerUser = async (db, username, name, tag) => {
+  try {
+    const query = { username };
+    const update = { $set: { username, name, tag, rank: 0 } };
+    const options = { upsert: true };
+    await db.db("main").collection("users").updateOne(query, update, options);
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 exports.addRole = addRole;
 exports.collectList = collectList;
 exports.createReply = createReply;
 exports.randomizeList = randomizeList;
 exports.removeRole = removeRole;
 exports.removeRoleFromAllUsers = removeRoleFromAllUsers;
+exports.registerUser = registerUser;
