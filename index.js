@@ -53,7 +53,7 @@ client.on("interactionCreate", async (interaction) => {
   switch (commandName) {
     case "randomize": {
       const signupsList = await randomizeList(
-        collectList(interaction, roleToAdd)
+        await collectList(interaction, roleToAdd)
       );
       const listReply = createReply(signupsList);
       await interaction.reply(listReply);
