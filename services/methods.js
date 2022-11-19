@@ -47,7 +47,7 @@ const addRole = async (reaction, user, allRoles, roleToAdd, guild) => {
  * @param {*} interaction - The interaction object received by the listener interactionCreate, contains the guild object to fetch all members
  * @returns - signupsList, an array containing all the signups for the day
  */
-const collectList = async (interaction, roleToAdd) => {
+const collectList = async (interaction, roleToAdd, users) => {
   const signupsList = [];
 
   // Gets list of members who have the role in membersList
@@ -59,8 +59,15 @@ const collectList = async (interaction, roleToAdd) => {
     const temp = result.value._roles;
     const size = Object.keys(temp).length;
     for (let i = 0; i < size; i++) {
-      if (temp[i] === roleToAdd.id && result.value.user.username != botUsername)
-        signupsList.push(result.value.user.username);
+      if (
+        temp[i] === roleToAdd.id &&
+        result.value.user.username != botUsername
+      ) {
+        const user = await users.findOne({
+          username: result.value.user.username,
+        });
+        signupsList.push({ username: user.username, rank: user.rank });
+      }
     }
     result = memberIterator.next();
   }
@@ -76,6 +83,9 @@ const randomizeList = async (signupsList) => {
     const j = Math.floor(Math.random() * (i + 1));
     [signupsList[i], signupsList[j]] = [signupsList[j], signupsList[i]];
   }
+
+  // Post randomize swapping
+  // Case - 7 members
 
   return signupsList;
 };
@@ -120,15 +130,40 @@ const removeRoleFromAllUsers = async (interaction, roleToAdd) => {
 /**
  * @param {*} db - database client of mongodb
  * @param {*} username - username of the person who used the interaction
- * @param {*} name - valorant in game name 
+ * @param {*} name - valorant in game name
  * @param {*} tag - valornat in game tag
  */
-const registerUser = async (db, username, name, tag) => {
+const registerUser = async (users, username, name, tag) => {
   try {
     const query = { username };
     const update = { $set: { username, name, tag, rank: 0 } };
     const options = { upsert: true };
-    await db.db("main").collection("users").updateOne(query, update, options);
+    await users.updateOne(query, update, options);
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const updateRankForUser = async (users, username) => {
+  try {
+    const user = await users.findOne({ username: username });
+
+    if (!user) return console.error(`No user found with username ${username}`);
+
+    const { name, tag } = user;
+
+    const response = await axios({
+      method: "get",
+      timeout: 20 * 1000,
+      url: `https://api.henrikdev.xyz/valorant/v1/mmr/ap/${name}/${tag}`,
+    });
+
+    if (response.data.data.currenttier == user.rank) return;
+
+    await users.updateOne(
+      { username },
+      { $set: { rank: response.data.data.currenttier } }
+    );
   } catch (error) {
     console.error(error);
   }
@@ -141,3 +176,4 @@ exports.randomizeList = randomizeList;
 exports.removeRole = removeRole;
 exports.removeRoleFromAllUsers = removeRoleFromAllUsers;
 exports.registerUser = registerUser;
+exports.updateRankForUser = updateRankForUser;

@@ -8,6 +8,7 @@ const {
   createReply,
   removeRoleFromAllUsers,
   registerUser,
+  updateRankForUser,
 } = require("./services/methods.js");
 const {
   reactionMessage,
@@ -31,6 +32,7 @@ const client = new Client({
 let allRoles;
 let guild;
 let roleToAdd = "";
+let users;
 client.once("ready", async (c) => {
   try {
     guild = await c.guilds.fetch(rudiString);
@@ -38,7 +40,8 @@ client.once("ready", async (c) => {
     roleToAdd = allRoles.get(roleString);
 
     await db.connect();
-    
+    users = db.db("main").collection("users");
+
     console.info("Bot running!");
   } catch (error) {
     console.error(error);
@@ -53,7 +56,8 @@ client.on("interactionCreate", async (interaction) => {
   switch (commandName) {
     case "randomize": {
       const signupsList = await randomizeList(
-        await collectList(interaction, roleToAdd)
+        await collectList(interaction, roleToAdd),
+        users
       );
       const listReply = createReply(signupsList);
       await interaction.reply(listReply);
@@ -76,7 +80,7 @@ client.on("interactionCreate", async (interaction) => {
       const name = interaction.options.getString("name");
       const tag = interaction.options.getString("tag");
 
-      registerUser(db, interaction.user.username, name, tag);
+      registerUser(users, interaction.user.username, name, tag);
 
       await interaction.reply("O K");
       break;
@@ -103,6 +107,7 @@ client.on("messageCreate", async (msg) => {
 
     collector.on("collect", async (reaction, user) => {
       addRole(reaction, user, allRoles, roleString, guild);
+      updateRankForUser(users, user.username);
     });
 
     collector.on("remove", async (reaction, user) => {
