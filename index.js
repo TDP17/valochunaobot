@@ -55,11 +55,13 @@ client.on("interactionCreate", async (interaction) => {
 
   switch (commandName) {
     case "randomize": {
-      const signupsList = await randomizeList(
-        await collectList(interaction, roleToAdd),
-        users
-      );
-      const listReply = createReply(signupsList);
+      let signupsList;
+      while (!Array.isArray(signupsList)) {
+        signupsList = await randomizeList(
+          await collectList(interaction, roleToAdd, users)
+        );
+      }
+      const listReply = createReply(signupsList.map((s) => s.username));
       await interaction.reply(listReply);
       break;
     }
@@ -80,9 +82,9 @@ client.on("interactionCreate", async (interaction) => {
       const name = interaction.options.getString("name");
       const tag = interaction.options.getString("tag");
 
-      registerUser(users, interaction.user.username, name, tag);
+      const reply = await registerUser(users, interaction.user.username, name, tag);
 
-      await interaction.reply("O K");
+      await interaction.reply(reply);
       break;
     }
     default:
@@ -100,13 +102,13 @@ client.on("interactionCreate", async (interaction) => {
  *  });
  */
 client.on("messageCreate", async (msg) => {
-  if (msg.content === reactionMessage) {
+   if (msg.content === reactionMessage) {
     const collector = msg.createReactionCollector({
       dispose: true,
     });
 
     collector.on("collect", async (reaction, user) => {
-      addRole(reaction, user, allRoles, roleString, guild);
+      addRole(reaction, user, allRoles, roleString, guild, client, users);
       updateRankForUser(users, user.username);
     });
 
