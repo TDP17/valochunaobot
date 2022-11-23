@@ -1,8 +1,6 @@
 const axios = require("axios");
 const { botUsername } = require("../utils/constant");
-const {
-  canQueue,
-} = require("../utils/rankBasedUtils");
+const { canQueue } = require("../utils/rankBasedUtils");
 
 /**
  * Removes role from given user
@@ -146,8 +144,8 @@ const randomizeList = async (signupsList) => {
     //   signupsList[firstIndex],
     // ];
   }
-  // Case - 8/9, 13/14... members
-  else if (signupsList.length % 5 === 3 || signupsList.length % 5 === 4) {
+  // Case - 8, 13... members
+  else if (signupsList.length % 5 === 3) {
     // const signupsListRanks = signupsList.map((s) => s.rank);
     const lastPersonRank = signupsList[signupsList.length - 1].rank;
     const secondLastPersonRank = signupsList[signupsList.length - 2].rank;
@@ -155,7 +153,8 @@ const randomizeList = async (signupsList) => {
 
     if (
       canQueue(lastPersonRank, secondLastPersonRank) &&
-      canQueue(thirdLastPersonRank, secondLastPersonRank)
+      canQueue(thirdLastPersonRank, secondLastPersonRank) &&
+      canQueue(thirdLastPersonRank, lastPersonRank)
     )
       return signupsList;
     else return -1;
@@ -206,6 +205,21 @@ const randomizeList = async (signupsList) => {
     //   signupsList[secondIndex],
     //   signupsList[firstIndex],
     // ];
+  }
+  // Case - 9, 14... members -> Ignore last person
+  else if (signupsList.length % 5 === 4) {
+    const lastPersonRank = signupsList[signupsList.length - 2].rank;
+    const secondLastPersonRank = signupsList[signupsList.length - 3].rank;
+    const thirdLastPersonRank = signupsList[signupsList.length - 4].rank;
+
+    if (
+      canQueue(lastPersonRank, secondLastPersonRank) &&
+      canQueue(thirdLastPersonRank, secondLastPersonRank) &&
+      canQueue(thirdLastPersonRank, lastPersonRank)
+    ) {
+      signupsList.pop();
+      return signupsList;
+    } else return -1;
   }
 
   return signupsList;
