@@ -41,9 +41,9 @@ const addRole = async (
   if (reaction.emoji.name === "👍") {
     const member = await guild.members.fetch(user.id);
     try {
-      const user = await users.findOne({ username: username });
+      const foundUser = await users.findOne({ username: user.username });
 
-      if (!user) {
+      if (!foundUser) {
         const u = await client.users.fetch(user.id);
         if (!u.bot)
           u.send("Please register first using /register with your ign and tag");
