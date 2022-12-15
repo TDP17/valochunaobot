@@ -8,7 +8,7 @@ const { canQueue } = require("../utils/rankBasedUtils");
  * @param {*} user - user that did the reaction
  * @param {*} roleToRemove - role to remove for the user who retracted the signup
  */
-const removeRole = async (reaction, user, roleToRemove) => {
+const removeRole = async (reaction, user, roleToRemove, guild) => {
   try {
     if (reaction.emoji.name === "👍") {
       const member = await guild.members.fetch(user.id);

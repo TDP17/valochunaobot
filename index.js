@@ -55,6 +55,7 @@ client.on("interactionCreate", async (interaction) => {
 
   switch (commandName) {
     case "randomize": {
+      await interaction.deferReply();
       let signupsList;
       while (!Array.isArray(signupsList)) {
         signupsList = await randomizeList(
@@ -62,7 +63,7 @@ client.on("interactionCreate", async (interaction) => {
         );
       }
       const listReply = createReply(signupsList.map((s) => s.username));
-      await interaction.reply(listReply);
+      await interaction.editReply(listReply);
       break;
     }
     case "signups": {
@@ -113,7 +114,7 @@ client.on("messageCreate", async (msg) => {
     });
 
     collector.on("remove", async (reaction, user) => {
-      removeRole(reaction, user, roleToAdd);
+      removeRole(reaction, user, roleToAdd, guild);
     });
   }
 });
