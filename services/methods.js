@@ -306,7 +306,7 @@ const updateRankForUser = async (users, username) => {
 
     const response = await axios({
       method: "get",
-      timeout: 20 * 1000,
+      timeout: 20 * 10000,
       url: `https://api.henrikdev.xyz/valorant/v1/mmr/ap/${name}/${tag}`,
     });
 

@@ -80,12 +80,14 @@ client.on("interactionCreate", async (interaction) => {
       break;
     }
     case "register": {
+      await interaction.deferReply();
+
       const name = interaction.options.getString("name");
       const tag = interaction.options.getString("tag");
 
       const reply = await registerUser(users, interaction.user.username, name, tag);
 
-      await interaction.reply(reply);
+      await interaction.editReply(reply);
       break;
     }
     default:
