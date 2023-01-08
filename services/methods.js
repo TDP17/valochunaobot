@@ -44,7 +44,7 @@ const addRole = async (
       if (!foundUser) {
         const u = await client.users.fetch(user.id);
         if (!u.bot)
-          u.send("Please register first using /register with your ign and tag");
+          u.send("Ghar jaladunga tumhara, register karlo pehle with ign and tag and then remove the reaction and re-add it");
         return;
       }
 
