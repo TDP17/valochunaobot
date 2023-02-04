@@ -9,7 +9,7 @@ const {
   removeRoleFromAllUsers,
   registerUser,
   updateRankForUser,
-} = require("./services/methods.js");
+} = require("./services/supportingMethods.js");
 const {
   reactionMessage,
   roleString,
@@ -41,6 +41,7 @@ client.once("ready", async (c) => {
 
     await db.connect();
     users = db.db("main").collection("users");
+    dbExemptedUsers = db.db("main").collection("exemptedUsers");
 
     console.info("Bot running!");
   } catch (error) {
@@ -59,13 +60,15 @@ client.on("interactionCreate", async (interaction) => {
       let signupsList;
       while (!Array.isArray(signupsList)) {
         signupsList = await randomizeList(
-          await collectList(interaction, roleToAdd, users)
+          await collectList(interaction, roleToAdd, users),
+          dbExemptedUsers
         );
       }
       const listReply = createReply(signupsList.map((s) => s.username));
       await interaction.editReply(listReply);
       break;
     }
+
     case "signups": {
       const message = await interaction.reply({
         content: reactionMessage,
@@ -74,11 +77,14 @@ client.on("interactionCreate", async (interaction) => {
       message.react("👍");
       break;
     }
+
     case "removeroles": {
-      removeRoleFromAllUsers(interaction, roleToAdd);
-      await interaction.reply("Removed roles");
+      await interaction.deferReply();
+      await removeRoleFromAllUsers(interaction, roleToAdd);
+      await interaction.editReply("Removed roles");
       break;
     }
+
     case "register": {
       await interaction.deferReply();
 
@@ -90,6 +96,7 @@ client.on("interactionCreate", async (interaction) => {
       await interaction.editReply(reply);
       break;
     }
+
     default:
       break;
   }
@@ -97,7 +104,7 @@ client.on("interactionCreate", async (interaction) => {
 
 /**
  * Listener for the creation of a message in the guild, receives the msg object
- * @todo Probably refactor the retrieval of guild &roleToManage to be called on the start of a command only once instead of on every message
+ * @todo Probably refactor the retrieval of guild & roleToManage to be called on the start of a command only once instead of on every message
  * Something like
  *  client.once("ready", () => {
  *    console.log("Bot running!");
@@ -111,7 +118,7 @@ client.on("messageCreate", async (msg) => {
     });
 
     collector.on("collect", async (reaction, user) => {
-      addRole(reaction, user, allRoles, roleString, guild, client, users);
+      addRole(reaction, user, roleString, guild, client, users);
       updateRankForUser(users, user.username);
     });
 

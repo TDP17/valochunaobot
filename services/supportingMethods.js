@@ -1,6 +1,5 @@
 const axios = require("axios");
 const { botUsername } = require("../utils/constant");
-const { canQueue } = require("../utils/rankBasedUtils");
 
 /**
  * Removes role from given user
@@ -29,13 +28,11 @@ const removeRole = async (reaction, user, roleToRemove, guild) => {
 const addRole = async (
   reaction,
   user,
-  allRoles,
   roleToAdd,
   guild,
   client,
   users
 ) => {
-  // console.log("Reaction collected", reaction.emoji.name, user.username);
   if (reaction.emoji.name === "👍") {
     const member = await guild.members.fetch(user.id);
     try {
@@ -49,12 +46,6 @@ const addRole = async (
       }
 
       await member.roles.add(roleToAdd);
-      // This logs the user information, uncomment if something is buggy
-      // console.log(member.user.username);
-      // const named_roles_array = newMember._roles.map((item) => {
-      //   return allRoles.get(item).name;
-      // });
-      // console.log(named_roles_array);
     } catch (error) {
       console.error(error);
     }
@@ -93,133 +84,6 @@ const collectList = async (interaction, roleToAdd, users) => {
       }
     }
     result = memberIterator.next();
-  }
-
-  return signupsList;
-};
-
-/**
- * @param {*} signupsList - The list of signed up users
- */
-const randomizeList = async (signupsList) => {
-  for (let i = signupsList.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [signupsList[i], signupsList[j]] = [signupsList[j], signupsList[i]];
-  }
-
-  // Post randomize swapping
-  // Case 5, 10... members
-  if (signupsList.length <= 5) return signupsList;
-
-  // Case - 6, 11... members
-  if (signupsList.length % 5 <= 1) {
-    return signupsList;
-  }
-  // Case - 7, 12... members
-  else if (signupsList.length % 5 === 2) {
-    const lastPersonRank = signupsList[signupsList.length - 1].rank;
-    const secondLastPersonRank = signupsList[signupsList.length - 2].rank;
-
-    if (canQueue(lastPersonRank, secondLastPersonRank)) return signupsList;
-    else return -1;
-
-    // Definitive way to find the 2 people that can queue, fixes time complexity - use if taking too long to find.
-    // const signupsListRanks = signupsList.map((s) => s.rank);
-    // const swaps = findPersonToSwitchInTwo(
-    //   signupsListRanks.slice(0, -2),
-    //   secondLastPersonRank,
-    //   lastPersonRank
-    // );
-
-    // // Has to be either of last 2
-    // const firstIndex =
-    //   swaps.in === lastPersonRank
-    //     ? signupsListRanks.length - 1
-    //     : signupsListRanks.length - 2;
-    // const secondIndex = signupsListRanks.indexOf(swaps.out);
-    // if (secondIndex === -1) return -1;
-
-    // [signupsList[firstIndex], signupsList[secondIndex]] = [
-    //   signupsList[secondIndex],
-    //   signupsList[firstIndex],
-    // ];
-  }
-  // Case - 8, 13... members
-  else if (signupsList.length % 5 === 3) {
-    // const signupsListRanks = signupsList.map((s) => s.rank);
-    const lastPersonRank = signupsList[signupsList.length - 1].rank;
-    const secondLastPersonRank = signupsList[signupsList.length - 2].rank;
-    const thirdLastPersonRank = signupsList[signupsList.length - 3].rank;
-
-    if (
-      canQueue(lastPersonRank, secondLastPersonRank) &&
-      canQueue(thirdLastPersonRank, secondLastPersonRank) &&
-      canQueue(thirdLastPersonRank, lastPersonRank)
-    )
-      return signupsList;
-    else return -1;
-
-    // Definitive way to find the 3 people that can queue, fixes time complexity - use if taking too long to find.
-    // if (signupsList.length % 5 === 4) signupsList.pop();
-    // if (
-    //   (!canQueue(lastPersonRank, secondLastPersonRank),
-    //   !canQueue(lastPersonRank, thirdLastPersonRank),
-    //   !canQueue(thirdLastPersonRank, secondLastPersonRank))
-    // )
-    //   return -1;
-
-    // // The approach we take here is swap in last person, second last person and third last person
-    // // then select a random one from the 3 lists possible
-    // const randomizationHelper = [];
-    // const lastIn = findPersonToSwitchInThree(
-    //   signupsListRanks.slice(0, -3),
-    //   lastPersonRank,
-    //   secondLastPersonRank,
-    //   thirdLastPersonRank
-    // );
-    // const secondLastIn = findPersonToSwitchInThree(
-    //   signupsListRanks.slice(0, -3),
-    //   lastPersonRank,
-    //   secondLastPersonRank,
-    //   thirdLastPersonRank
-    // );
-    // const thirdLastIn = findPersonToSwitchInThree(
-    //   signupsListRanks.slice(0, -3),
-    //   lastPersonRank,
-    //   secondLastPersonRank,
-    //   thirdLastPersonRank
-    // );
-    // if (lastIn !== -1) randomizationHelper.push(lastIn);
-    // if (secondLastIn !== -1) randomizationHelper.push(secondLastIn);
-    // if (thirdLastIn !== -1) randomizationHelper.push(thirdLastIn);
-
-    // const finalListIndex =
-    //   randomizationHelper[
-    //     Math.floor(Math.random() * randomizationHelper.length)
-    //   ];
-
-    // const firstIndex = signupsListRanks.indexOf(finalListIndex.in);
-    // const secondIndex = signupsListRanks.indexOf(finalListIndex.out);
-
-    // [signupsList[firstIndex], signupsList[secondIndex]] = [
-    //   signupsList[secondIndex],
-    //   signupsList[firstIndex],
-    // ];
-  }
-  // Case - 9, 14... members -> Ignore last person
-  else if (signupsList.length % 5 === 4) {
-    const lastPersonRank = signupsList[signupsList.length - 2].rank;
-    const secondLastPersonRank = signupsList[signupsList.length - 3].rank;
-    const thirdLastPersonRank = signupsList[signupsList.length - 4].rank;
-
-    if (
-      canQueue(lastPersonRank, secondLastPersonRank) &&
-      canQueue(thirdLastPersonRank, secondLastPersonRank) &&
-      canQueue(thirdLastPersonRank, lastPersonRank)
-    ) {
-      signupsList.pop();
-      return signupsList;
-    } else return -1;
   }
 
   return signupsList;
@@ -321,11 +185,27 @@ const updateRankForUser = async (users, username) => {
   }
 };
 
+/**
+ * Purges the exempted collection. Adds users to if an argument is passed to it
+ * @param {*} dbExemptedUsers The collection of exempted users
+ * @param  {...any} exemptedUsers Usernames of the exempted users if any
+ */
+const editExempted = async (dbExemptedUsers, ...exemptedUsers) => {
+  await dbExemptedUsers.deleteMany({});
+
+  // Add users only if passed
+  if(exemptedUsers.length > 0)
+  {
+    for(username in exemptedUsers)
+      await dbExemptedUsers.insertOne({username: user});
+  }
+};
+
 exports.addRole = addRole;
 exports.collectList = collectList;
 exports.createReply = createReply;
-exports.randomizeList = randomizeList;
 exports.removeRole = removeRole;
 exports.removeRoleFromAllUsers = removeRoleFromAllUsers;
 exports.registerUser = registerUser;
 exports.updateRankForUser = updateRankForUser;
+exports.editExempted = editExempted;
