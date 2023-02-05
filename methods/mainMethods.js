@@ -100,23 +100,23 @@ const createReply = (includedList, ...excludedList) => {
   let idx = 1;
 
   let listReply = "```";
-  if (includedList.length > 0)
-  {
+  if (includedList.length > 0) {
     listReply += `\n${idx}. ${includedList.slice(0, 5).join(", ")}\n`;
     idx++;
+  } else {
+    listReply += `No signups found`;
+    listReply += "```";
+    return listReply;
   }
-  else listReply += `No signups found`;
-  if (includedList.length > 5)
-  {
+  if (includedList.length > 5) {
     listReply += `${idx}. ${includedList.slice(5, 10).join(", ")}\n`;
     idx++;
   }
-  if (includedList.length > 10)
-  {
+  if (includedList.length > 10) {
     listReply += `${idx}. ${includedList.slice(10, 15).join(", ")}\n`;
-    idx++;    
+    idx++;
   }
-  if (excludedList.length > 0) {
+  if (excludedList[0].length > 0) {
     if (excludedList.length === 4) excludedList.pop();
     listReply += `${idx}. ${excludedList[0].join(", ")}\n`;
   }
@@ -267,12 +267,12 @@ const randomizeList = async (signupsList, dbExemptedUsers) => {
   // Case - 9, 14... members -> Ignore last person
   else if (signupsList.length % 5 === 4) {
     const popped = nonExemptedList.pop();
+    signupsList = signupsList.filter(u => u.username !== popped.username);
     const { includedList, excludedList } = randomizeInModThree(
       exemptedList,
       nonExemptedList,
       signupsList
     );
-
 
     const droppedList = excludedList.slice();
     droppedList.push(popped.username);
