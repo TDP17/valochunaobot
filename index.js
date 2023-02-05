@@ -9,10 +9,10 @@ const {
   removeRoleFromAllUsers,
   registerUser,
   updateRankForUser,
-} = require("./services/supportingMethods.js");
+} = require("./methods/mainMethods.js");
 const {
   reactionMessage,
-  roleString,
+  roleString,   
   rudiString,
 } = require("./utils/constant.js");
 const { db } = require("./database/initDB.js");
@@ -57,14 +57,15 @@ client.on("interactionCreate", async (interaction) => {
   switch (commandName) {
     case "randomize": {
       await interaction.deferReply();
-      let signupsList;
-      while (!Array.isArray(signupsList)) {
-        signupsList = await randomizeList(
-          await collectList(interaction, roleToAdd, users),
-          dbExemptedUsers
-        );
-      }
-      const listReply = createReply(signupsList.map((s) => s.username));
+
+      const { includedList, excludedList } = await randomizeList(
+        await collectList(interaction, roleToAdd, users),
+        dbExemptedUsers
+      );
+      const listReply = createReply(
+        includedList,
+        excludedList
+      );
       await interaction.editReply(listReply);
       break;
     }
@@ -91,7 +92,12 @@ client.on("interactionCreate", async (interaction) => {
       const name = interaction.options.getString("name");
       const tag = interaction.options.getString("tag");
 
-      const reply = await registerUser(users, interaction.user.username, name, tag);
+      const reply = await registerUser(
+        users,
+        interaction.user.username,
+        name,
+        tag
+      );
 
       await interaction.editReply(reply);
       break;
@@ -112,7 +118,7 @@ client.on("interactionCreate", async (interaction) => {
  *  });
  */
 client.on("messageCreate", async (msg) => {
-   if (msg.content === reactionMessage) {
+  if (msg.content === reactionMessage) {
     const collector = msg.createReactionCollector({
       dispose: true,
     });

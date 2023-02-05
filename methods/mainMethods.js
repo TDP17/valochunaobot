@@ -1,3 +1,10 @@
+const {
+  editExempted,
+  randomizeInModOne,
+  randomizeInModTwo,
+  randomizeInModThree,
+} = require("./supportingMethods");
+
 const axios = require("axios");
 const { botUsername } = require("../utils/constant");
 
@@ -25,14 +32,7 @@ const removeRole = async (reaction, user, roleToRemove, guild) => {
  * @param {*} roleToAdd - role to add for the user who retracted the signup
  * @param {*} guild - guild is the server (I think?)
  */
-const addRole = async (
-  reaction,
-  user,
-  roleToAdd,
-  guild,
-  client,
-  users
-) => {
+const addRole = async (reaction, user, roleToAdd, guild, client, users) => {
   if (reaction.emoji.name === "👍") {
     const member = await guild.members.fetch(user.id);
     try {
@@ -41,7 +41,9 @@ const addRole = async (
       if (!foundUser) {
         const u = await client.users.fetch(user.id);
         if (!u.bot)
-          u.send("Ghar jaladunga tumhara, register karlo pehle with ign and tag and then remove the reaction and re-add it");
+          u.send(
+            "Ghar jaladunga tumhara, register karlo pehle with ign and tag and then remove the reaction and re-add it"
+          );
         return;
       }
 
@@ -90,18 +92,34 @@ const collectList = async (interaction, roleToAdd, users) => {
 };
 
 /**
- * @param {*} signupsList - The list of signed up users
+ * @param {*} includedList - The list of included users
+ * @param {*} excludedList - The list of excluded users
  * @returns - listReply, the formatted string version of the reply message by the bot
  */
-const createReply = (signupsList) => {
+const createReply = (includedList, ...excludedList) => {
+  let idx = 1;
+
   let listReply = "```";
-  if (signupsList.length > 0)
-    listReply += `\n1.${signupsList.slice(0, 5).join(", ")}\n`;
+  if (includedList.length > 0)
+  {
+    listReply += `\n${idx}. ${includedList.slice(0, 5).join(", ")}\n`;
+    idx++;
+  }
   else listReply += `No signups found`;
-  if (signupsList.length > 5)
-    listReply += `2.${signupsList.slice(5, 10).join(", ")}\n`;
-  if (signupsList.length > 10)
-    listReply += `3.${signupsList.slice(10, 15).join(", ")}\n`;
+  if (includedList.length > 5)
+  {
+    listReply += `${idx}. ${includedList.slice(5, 10).join(", ")}\n`;
+    idx++;
+  }
+  if (includedList.length > 10)
+  {
+    listReply += `${idx}. ${includedList.slice(10, 15).join(", ")}\n`;
+    idx++;    
+  }
+  if (excludedList.length > 0) {
+    if (excludedList.length === 4) excludedList.pop();
+    listReply += `${idx}. ${excludedList[0].join(", ")}\n`;
+  }
   listReply += "```";
 
   return listReply;
@@ -186,26 +204,91 @@ const updateRankForUser = async (users, username) => {
 };
 
 /**
- * Purges the exempted collection. Adds users to if an argument is passed to it
- * @param {*} dbExemptedUsers The collection of exempted users
- * @param  {...any} exemptedUsers Usernames of the exempted users if any
+ * @param {*} signupsList - The entire list of signed up users
+ * @param {*} exemptedUsers - The exempted users collection
  */
-const editExempted = async (dbExemptedUsers, ...exemptedUsers) => {
-  await dbExemptedUsers.deleteMany({});
-
-  // Add users only if passed
-  if(exemptedUsers.length > 0)
-  {
-    for(username in exemptedUsers)
-      await dbExemptedUsers.insertOne({username: user});
+const randomizeList = async (signupsList, dbExemptedUsers) => {
+  // Case 5, 10... members
+  // Return the list as it is and clear exempted collection
+  if (signupsList.length <= 5) {
+    await editExempted(dbExemptedUsers, []);
+    return {
+      includedList: signupsList.map((u) => u.username),
+      excludedList: [],
+    };
   }
+
+  // Pick out exempted and non exempted list
+  const exemptedList = await dbExemptedUsers
+    .find({}, { projection: { _id: 0 } })
+    .toArray();
+
+  const nonExemptedList = signupsList.filter(
+    (u) => !exemptedList.find((e) => e.username === u.username)
+  );
+
+  // Case - 6, 11... members
+  if (signupsList.length % 5 === 1) {
+    const { includedList, excludedList } = randomizeInModOne(
+      exemptedList,
+      nonExemptedList
+    );
+
+    editExempted(dbExemptedUsers, excludedList);
+
+    return { includedList, excludedList };
+  }
+
+  // Case - 7, 12... members
+  else if (signupsList.length % 5 === 2) {
+    const { includedList, excludedList } = randomizeInModTwo(
+      exemptedList,
+      nonExemptedList,
+      signupsList
+    );
+
+    editExempted(dbExemptedUsers, excludedList);
+
+    return { includedList, excludedList };
+  }
+
+  // Case - 8, 13... members
+  else if (signupsList.length % 5 === 3) {
+    const { includedList, excludedList } = randomizeInModThree(
+      exemptedList,
+      nonExemptedList,
+      signupsList
+    );
+
+    editExempted(dbExemptedUsers, excludedList);
+
+    return { includedList, excludedList };
+  }
+  // Case - 9, 14... members -> Ignore last person
+  else if (signupsList.length % 5 === 4) {
+    const popped = nonExemptedList.pop();
+    const { includedList, excludedList } = randomizeInModThree(
+      exemptedList,
+      nonExemptedList,
+      signupsList
+    );
+
+
+    const droppedList = excludedList.slice();
+    droppedList.push(popped.username);
+    editExempted(dbExemptedUsers, droppedList);
+
+    return { includedList, excludedList };
+  }
+
+  return signupsList;
 };
 
+exports.randomizeList = randomizeList;
+exports.updateRankForUser = updateRankForUser;
 exports.addRole = addRole;
 exports.collectList = collectList;
 exports.createReply = createReply;
-exports.removeRole = removeRole;
 exports.removeRoleFromAllUsers = removeRoleFromAllUsers;
 exports.registerUser = registerUser;
-exports.updateRankForUser = updateRankForUser;
-exports.editExempted = editExempted;
+exports.removeRole = removeRole;
