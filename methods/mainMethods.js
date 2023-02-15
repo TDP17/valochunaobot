@@ -99,6 +99,9 @@ const collectList = async (interaction, roleToAdd, users) => {
 const createReply = (includedList, ...excludedList) => {
   let idx = 1;
 
+  console.log("Todays included list", includedList);
+  console.log("Todays excluded list", excludedList);
+
   let listReply = "```";
   if (includedList.length > 0) {
     listReply += `\n${idx}. ${includedList.slice(0, 5).join(", ")}\n`;
@@ -219,9 +222,14 @@ const randomizeList = async (signupsList, dbExemptedUsers) => {
   }
 
   // Pick out exempted and non exempted list
-  const exemptedList = await dbExemptedUsers
+  let exemptedList = await dbExemptedUsers
     .find({}, { projection: { _id: 0 } })
     .toArray();
+
+  exemptedList = exemptedList.filter((e) =>
+    signupsList.find((s) => s.username === e.username)
+  );
+  console.log(exemptedList);
 
   const nonExemptedList = signupsList.filter(
     (u) => !exemptedList.find((e) => e.username === u.username)
@@ -267,7 +275,7 @@ const randomizeList = async (signupsList, dbExemptedUsers) => {
   // Case - 9, 14... members -> Ignore last person
   else if (signupsList.length % 5 === 4) {
     const popped = nonExemptedList.pop();
-    signupsList = signupsList.filter(u => u.username !== popped.username);
+    signupsList = signupsList.filter((u) => u.username !== popped.username);
     const { includedList, excludedList } = randomizeInModThree(
       exemptedList,
       nonExemptedList,
