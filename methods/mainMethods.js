@@ -7,6 +7,7 @@ const {
 
 const axios = require("axios");
 const { botUsername } = require("../utils/constant");
+const { shuffleArray } = require("../utils/genericUtils");
 
 /**
  * Removes role from given user
@@ -213,7 +214,8 @@ const updateRankForUser = async (users, username) => {
 const randomizeList = async (signupsList, dbExemptedUsers) => {
   // Case 5, 10... members
   // Return the list as it is and clear exempted collection
-  if (signupsList.length <= 5) {
+  if (signupsList.length % 5 === 0) {
+    shuffleArray(signupsList);
     await editExempted(dbExemptedUsers, []);
     return {
       includedList: signupsList.map((u) => u.username),
