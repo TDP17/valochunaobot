@@ -1,12 +1,13 @@
 {
   "name": "valochunaobot",
+  "type": "module",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node deploy-commands.js && node index.js",
+    "tsc": "tsc",
+    "start": "npm run tsc && node dist/deploy-commands.js && node dist/index.js",
     "devStart": "nodemon index.js",
-    "test": "node index.js",
     "slash": "node deploy-commands.js"
   },
   "keywords": [],
