@@ -1,10 +1,10 @@
 /**
- * Checks if two given ranks can queue together or not
- * @param {*} a (int) rank 1
- * @param {*} b (int) rank 2
- * @returns (boolean) If the two ranks a and b can queue together
+ * Checks if two given ranks can queue together or not.
+ * @param a rank 1.
+ * @param b rank 2.
+ * @returns (boolean), if the two ranks a and b can queue together.
  */
-const canQueue = (a, b) => {
+export const canQueue = (a: number, b: number): boolean => {
   const smaller = Math.min(a, b);
   const bigger = Math.max(a, b);
   if (smaller <= 8) return bigger <= 11;
@@ -18,13 +18,10 @@ const canQueue = (a, b) => {
   return false;
 };
 
-// Fisher - Yates (Knuth's algo)
-const shuffleArray = (arr) => {
+// Uses Fisher - Yates (Knuth's algo).
+export const shuffleArray = (arr: any[]): void => {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
 };
-
-exports.canQueue = canQueue;
-exports.shuffleArray = shuffleArray;

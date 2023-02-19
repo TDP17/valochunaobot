@@ -1,14 +1,15 @@
-const { shuffleArray, canQueue } = require("../utils/genericUtils");
+import { Collection, Document } from "mongodb";
+import { randomizedReturnType, signupsListType, usernameListType } from "../types/mainTypes";
+import { shuffleArray, canQueue } from "../utils/genericUtils.js";
 
 /**
- * Purges the exempted collection. Adds users to if an argument is passed to it
- * @param {*} dbExemptedUsers The collection of exempted users
- * @param  {...any} exemptedUsers Usernames of the exempted users if any
+ * Purges the exempted collection and adds users to if list of exempted users is non empty.
+ * @param dbExemptedUsers - The collection of exempted users.
+ * @param exemptedUsers - Usernames of the exempted users if any.
  */
-const editExempted = async (dbExemptedUsers, exemptedUsers) => {
+export const editExempted = async (dbExemptedUsers: Collection<Document>, exemptedUsers: string[]) => {
   await dbExemptedUsers.deleteMany({});
 
-  // Add users only if passed
   if (exemptedUsers.length > 0) {
     for (let username of exemptedUsers)
       await dbExemptedUsers.insertOne({ username: username });
@@ -16,13 +17,13 @@ const editExempted = async (dbExemptedUsers, exemptedUsers) => {
 };
 
 /**
- * Returns all the possible parties
- * @TODO This takes way too much time, change using a sorted rank list or something
- * @param {*} list The list to form combinations of
- * @param {*} partyNumber The number of people in a party
- * @returns (array of array of {username, rank}) The list of all possible parties
+ * Returns all the possible parties.
+ * @todo This takes too much time, change using a sorted rank list or something.
+ * @param list - The list to form combinations of.
+ * @param partyNumber - The number of people in a party.
+ * @returns (array of array of {username, rank}) The list of all possible parties.
  */
-const returnPossibleParties = (list, partyNumber) => {
+export const returnPossibleParties = (list: signupsListType, partyNumber: number) => {
   const possibleParties = [];
 
   if (partyNumber === 2) {
@@ -59,12 +60,12 @@ const returnPossibleParties = (list, partyNumber) => {
 };
 
 /**
- * Default randomize with every person (exempted included)
- * @param {*} signupsList The list of everyone who signed up
- * @param {*} partyNumber The number of people in excluded party
- * @returns (object includedList: [string], excludedList: [string]) An object containing the usernames of included and excluded players
+ * Default randomize with every person (exempted included).
+ * @param signupsList - The list of everyone who signed up.
+ * @param partyNumber - The number of people in excluded party.
+ * @returns (object includedList: [string], excludedList: [string]), an object containing the usernames of included and excluded players.
  */
-const fullListRandomize = (signupsList, partyNumber) => {
+const fullListRandomize = (signupsList: signupsListType, partyNumber: number): randomizedReturnType => {
   shuffleArray(signupsList);
   if (partyNumber === 2) {
     const lastPersonRank = signupsList[signupsList.length - 1].rank;
@@ -101,8 +102,13 @@ const fullListRandomize = (signupsList, partyNumber) => {
   }
 };
 
-// Maleshwaram area (hehe) one person from non exempted list and place in exempted collection
-const randomizeInModOne = (exemptedList, nonExemptedList) => {
+/**
+ * Maleshwaram area (hehe) one person from non exempted list and place in exempted collection
+ * @param exemptedList - The list of usernames who are exempted from being in the minority party.
+ * @param nonExemptedList - The list of usernames who can be in the minority party.
+ * @returns (object includedList: [string], excludedList: [string]), an object containing the usernames of included and excluded players.
+ */
+export const randomizeInModOne = (exemptedList: usernameListType, nonExemptedList: usernameListType) => {
   shuffleArray(nonExemptedList);
 
   const popped = nonExemptedList.pop();
@@ -115,10 +121,15 @@ const randomizeInModOne = (exemptedList, nonExemptedList) => {
   };
 };
 
-const randomizeInModTwo = (exemptedList, nonExemptedList, signupsList) => {
+/**
+ * @param exemptedList - The list of usernames who are exempted from being in the minority party.
+ * @param nonExemptedList - The list of usernames who can be in the minority party.
+ * @param signupsList - The list of usernames and ranks of everyone who signed up.
+ * @returns (object includedList: [string], excludedList: [string]), an object containing the usernames of included and excluded players.
+ */
+export const randomizeInModTwo = (exemptedList: usernameListType, nonExemptedList: signupsListType, signupsList: signupsListType) => {
   const possibleTwoMan = returnPossibleParties(nonExemptedList, 2);
 
-  let finalTwoMan;
   // If no two man, randomize along with exempted list --> Most common case is 4e+3n.
   if (possibleTwoMan.length === 0) {
     return fullListRandomize(signupsList, 2);
@@ -126,7 +137,7 @@ const randomizeInModTwo = (exemptedList, nonExemptedList, signupsList) => {
   // Otherwise shuffle possible list and pick first
   else {
     shuffleArray(possibleTwoMan);
-    finalTwoMan = possibleTwoMan[0];
+    const finalTwoMan = possibleTwoMan[0];
 
     // Construct list of non exempted list - two man
     const finalNonExemptedList = nonExemptedList
@@ -147,10 +158,15 @@ const randomizeInModTwo = (exemptedList, nonExemptedList, signupsList) => {
   }
 };
 
-const randomizeInModThree = (exemptedList, nonExemptedList, signupsList) => {
+/**
+ * @param exemptedList - The list of usernames who are exempted from being in the minority party.
+ * @param nonExemptedList - The list of usernames who can be in the minority party.
+ * @param signupsList - The list of usernames and ranks of everyone who signed up.
+ * @returns (object includedList: [string], excludedList: [string]), an object containing the usernames of included and excluded players.
+ */
+export const randomizeInModThree = (exemptedList: usernameListType, nonExemptedList: signupsListType, signupsList: signupsListType) => {
   const possibleThreeMan = returnPossibleParties(nonExemptedList, 3);
 
-  let finalThreeMan;
   // If no three man, randomize along with exempted list --> Most common case is 4e+4n.
   if (possibleThreeMan.length === 0) {
     return fullListRandomize(signupsList, 3);
@@ -158,7 +174,7 @@ const randomizeInModThree = (exemptedList, nonExemptedList, signupsList) => {
   // Otherwise shuffle possible list and pick first
   else {
     shuffleArray(possibleThreeMan);
-    finalThreeMan = possibleThreeMan[0];
+    const finalThreeMan = possibleThreeMan[0];
 
     // Construct list of non exempted list - three man
     const finalNonExemptedList = nonExemptedList
@@ -179,8 +195,3 @@ const randomizeInModThree = (exemptedList, nonExemptedList, signupsList) => {
     };
   }
 };
-
-exports.editExempted = editExempted;
-exports.randomizeInModOne = randomizeInModOne;
-exports.randomizeInModTwo = randomizeInModTwo;
-exports.randomizeInModThree = randomizeInModThree;

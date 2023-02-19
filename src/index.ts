@@ -1,22 +1,15 @@
-const { Client, GatewayIntentBits } = require("discord.js");
-const dotenv = require("dotenv");
-const {
-  removeRole,
-  addRole,
-  collectList,
-  randomizeList,
-  createReply,
-  removeRoleFromAllUsers,
-  registerUser,
-  updateRankForUser,
-} = require("./methods/mainMethods.js");
-const {
-  reactionMessage,
-  roleString,   
-  rudiString,
-} = require("./utils/constant.js");
-const { db } = require("./database/initDB.js");
+import { Client, Collection, GatewayIntentBits, Guild, Role } from "discord.js";
+import { removeRoleFromUser, addRoleToUser, collectList, randomizeList, createReply, removeRoleFromAllUsers, registerUser, updateRankForUser } from "./methods/mainMethods.js";
+import { reactionMessage, roleString, rudiString } from "./utils/constant.js";
+import db from "./database/initDB.js";
+
+import * as dotenv from "dotenv";
 dotenv.config();
+
+const dbUsers = db.db("main").collection("users");
+const dbExemptedUsers = db.db("main").collection("exemptedUsers");
+
+let guild: Guild, allRoles: Collection<string, Role>, roleToManage: Role;
 
 const client = new Client({
   intents: [
@@ -29,26 +22,22 @@ const client = new Client({
   ],
 });
 
-let allRoles;
-let guild;
-let roleToAdd = "";
-let users;
 client.once("ready", async (c) => {
   try {
+    await db.connect();
+
+    // Fetch important objects needed to get/set discord data.
     guild = await c.guilds.fetch(rudiString);
     allRoles = await guild.roles.fetch();
-    roleToAdd = allRoles.get(roleString);
-
-    await db.connect();
-    users = db.db("main").collection("users");
-    dbExemptedUsers = db.db("main").collection("exemptedUsers");
-
-    console.info("Bot running!");
+    roleToManage = allRoles.get(roleString);
+    
+    console.info("ValoChunaoBot is online and running!");
   } catch (error) {
     console.error(error);
   }
 });
 
+// Handle the slash commands input by the user,
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
@@ -59,7 +48,7 @@ client.on("interactionCreate", async (interaction) => {
       await interaction.deferReply();
 
       const { includedList, excludedList } = await randomizeList(
-        await collectList(interaction, roleToAdd, users),
+        await collectList(interaction, roleToManage, dbUsers),
         dbExemptedUsers
       );
       const listReply = createReply(
@@ -81,7 +70,7 @@ client.on("interactionCreate", async (interaction) => {
 
     case "removeroles": {
       await interaction.deferReply();
-      await removeRoleFromAllUsers(interaction, roleToAdd);
+      await removeRoleFromAllUsers(interaction, roleToManage);
       await interaction.editReply("Removed roles");
       break;
     }
@@ -93,7 +82,7 @@ client.on("interactionCreate", async (interaction) => {
       const tag = interaction.options.getString("tag");
 
       const reply = await registerUser(
-        users,
+        dbUsers,
         interaction.user.username,
         name,
         tag
@@ -108,30 +97,26 @@ client.on("interactionCreate", async (interaction) => {
   }
 });
 
-/**
- * Listener for the creation of a message in the guild, receives the msg object
- * @todo Probably refactor the retrieval of guild & roleToManage to be called on the start of a command only once instead of on every message
- * Something like
- *  client.once("ready", () => {
- *    console.log("Bot running!");
- *    Retrieve guild and role to manage here itself
- *  });
- */
+// Hack to get signups on reaction.
 client.on("messageCreate", async (msg) => {
   if (msg.content === reactionMessage) {
     const collector = msg.createReactionCollector({
       dispose: true,
     });
 
+    // Adds the role given on reaction to user and then updates his/her rank in the database
     collector.on("collect", async (reaction, user) => {
-      addRole(reaction, user, roleString, guild, client, users);
-      updateRankForUser(users, user.username);
+      if (reaction.emoji.name === "👍") {
+        await addRoleToUser(user, roleString, guild, client, dbUsers);
+        await updateRankForUser(dbUsers, user.username);
+      }
     });
 
     collector.on("remove", async (reaction, user) => {
-      removeRole(reaction, user, roleToAdd, guild);
+      await removeRoleFromUser(reaction, user, roleToManage, guild);
     });
   }
 });
+
 
 client.login(process.env.BOT_ID);
