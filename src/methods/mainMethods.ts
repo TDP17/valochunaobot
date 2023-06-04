@@ -1,9 +1,23 @@
 import axios from "axios";
-import { editExempted, randomizeInModOne, randomizeInModTwo, randomizeInModThree } from "./supportingMethods.js";
+import {
+  editExempted,
+  randomizeInModOne,
+  randomizeInModTwo,
+  randomizeInModThree,
+} from "./supportingMethods.js";
 import { signupsListType, usernameListType } from "../types/mainTypes";
 
 import { botUsername } from "../utils/constant.js";
-import { MessageReaction, User, Role, Guild, Client, CacheType, Interaction } from "discord.js";
+import { shuffleArray } from "../utils/genericUtils.js";
+import {
+  MessageReaction,
+  User,
+  Role,
+  Guild,
+  Client,
+  CacheType,
+  Interaction,
+} from "discord.js";
 import { Collection, Document } from "mongodb";
 
 /**
@@ -12,7 +26,12 @@ import { Collection, Document } from "mongodb";
  * @param roleToRemove - Role to remove for the user who removed the signup.
  * @param guild - The discord server object.
  */
-export const removeRoleFromUser = async (reaction: MessageReaction, user: User, roleToRemove: Role, guild: Guild) => {
+export const removeRoleFromUser = async (
+  reaction: MessageReaction,
+  user: User,
+  roleToRemove: Role,
+  guild: Guild
+) => {
   try {
     if (reaction.emoji.name === "👍") {
       const member = await guild.members.fetch(user.id);
@@ -29,7 +48,13 @@ export const removeRoleFromUser = async (reaction: MessageReaction, user: User, 
  * @param roleToManage - Role to add for the user who added the signup.
  * @param guild - The discord server object.
  */
-export const addRoleToUser = async (user: User, roleToManage: string, guild: Guild, client: Client<boolean>, dbUsers: Collection<Document>) => {
+export const addRoleToUser = async (
+  user: User,
+  roleToManage: string,
+  guild: Guild,
+  client: Client<boolean>,
+  dbUsers: Collection<Document>
+) => {
   const member = await guild.members.fetch(user.id);
   try {
     const foundUser = await dbUsers.findOne({ username: user.username });
@@ -55,7 +80,11 @@ export const addRoleToUser = async (user: User, roleToManage: string, guild: Gui
  * @param interaction - The interaction object received by the listener interactionCreate, contains the guild object to fetch all members.
  * @returns - signupsList, an array containing all the signups for the day.
  */
-export const collectList = async (interaction: Interaction<CacheType>, roleToManage: Role, dbUsers: Collection<Document>) => {
+export const collectList = async (
+  interaction: Interaction<CacheType>,
+  roleToManage: Role,
+  dbUsers: Collection<Document>
+) => {
   const signupsList = [];
 
   // Gets list of members who have the role in membersList
@@ -94,7 +123,10 @@ export const collectList = async (interaction: Interaction<CacheType>, roleToMan
  * @param excludedList - The list of excluded users.
  * @returns - listReply, the formatted string version of the reply message by the bot.
  */
-export const createReply = (includedList: string[], ...excludedList: string[][]) => {
+export const createReply = (
+  includedList: string[],
+  ...excludedList: string[][]
+) => {
   let idx = 1;
 
   console.log("Todays included list", includedList);
@@ -131,7 +163,10 @@ export const createReply = (includedList: string[], ...excludedList: string[][])
  * @param interaction - The interaction object received by the listener interactionCreate, contains the guild object to fetch all members
  * @param roleToManage - Role to remove from all members.
  */
-export const removeRoleFromAllUsers = async (interaction: Interaction<CacheType>, roleToManage: Role) => {
+export const removeRoleFromAllUsers = async (
+  interaction: Interaction<CacheType>,
+  roleToManage: Role
+) => {
   const allMembers = await interaction.guild.members.fetch();
   const memberIt = allMembers.values();
   let result = memberIt.next();
@@ -153,7 +188,12 @@ export const removeRoleFromAllUsers = async (interaction: Interaction<CacheType>
  * @param name In game name of the Valorant player.
  * @param tag In game tag of the Valorant player (The numbers after the #, example #7590 --> 7590).
  */
-export const registerUser = async (dbUsers: Collection<Document>, username: string, name: string, tag: string) => {
+export const registerUser = async (
+  dbUsers: Collection<Document>,
+  username: string,
+  name: string,
+  tag: string
+) => {
   try {
     const response = await axios({
       method: "get",
@@ -185,7 +225,10 @@ export const registerUser = async (dbUsers: Collection<Document>, username: stri
  * @param dbUsers The database collection for the users.
  * @param username The discord username of the person to update rank for.
  */
-export const updateRankForUser = async (dbUsers: Collection<Document>, username: string) => {
+export const updateRankForUser = async (
+  dbUsers: Collection<Document>,
+  username: string
+) => {
   if (username === "ValoChunaoBot") return;
   try {
     const user = await dbUsers.findOne({ username: username });
@@ -219,9 +262,14 @@ export const updateRankForUser = async (dbUsers: Collection<Document>, username:
  * @param dbExemptedUsers The database collection for the exempted users.
  * @returns {includedList, excludedList}, an object containing the list of people in the 5 man and not in the 5 man respectively [does not return the popped user. Example in 9 people, does not return the 9th person].
  */
-export const randomizeList = async (signupsList: signupsListType, dbExemptedUsers: Collection<Document>) => {
+export const randomizeList = async (
+  signupsList: signupsListType,
+  dbExemptedUsers: Collection<Document>
+) => {
   // Case 5, 10... members
   if (signupsList.length % 5 === 0 || signupsList.length <= 5) {
+    shuffleArray(signupsList);
+
     await editExempted(dbExemptedUsers, []);
     return {
       includedList: signupsList.map((u) => u.username),
@@ -283,7 +331,7 @@ export const randomizeList = async (signupsList: signupsListType, dbExemptedUser
   // Case - 9, 14... members
   else if (signupsList.length % 5 === 4) {
     const popped = nonExemptedList.pop();
-    signupsList = signupsList.filter(u => u.username !== popped.username);
+    signupsList = signupsList.filter((u) => u.username !== popped.username);
 
     const { includedList, excludedList } = randomizeInModThree(
       exemptedList as unknown as usernameListType,
