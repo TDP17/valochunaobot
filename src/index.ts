@@ -1,5 +1,14 @@
 import { Client, Collection, GatewayIntentBits, Guild, Role } from "discord.js";
-import { removeRoleFromUser, addRoleToUser, collectList, randomizeList, createReply, removeRoleFromAllUsers, registerUser, updateRankForUser } from "./methods/mainMethods.js";
+import {
+  removeRoleFromUser,
+  addRoleToUser,
+  collectList,
+  randomizeList,
+  createReply,
+  removeRoleFromAllUsers,
+  registerUser,
+  updateRankForUser,
+} from "./methods/mainMethods.js";
 import { reactionMessage, roleString, rudiString } from "./utils/constant.js";
 import db from "./database/initDB.js";
 
@@ -30,7 +39,7 @@ client.once("ready", async (c) => {
     guild = await c.guilds.fetch(rudiString);
     allRoles = await guild.roles.fetch();
     roleToManage = allRoles.get(roleString);
-    
+
     console.info("ValoChunaoBot is online and running!");
   } catch (error) {
     console.error(error);
@@ -51,10 +60,7 @@ client.on("interactionCreate", async (interaction) => {
         await collectList(interaction, roleToManage, dbUsers),
         dbExemptedUsers
       );
-      const listReply = createReply(
-        includedList,
-        excludedList
-      );
+      const listReply = createReply(includedList, excludedList);
       await interaction.editReply(listReply);
       break;
     }
@@ -99,6 +105,17 @@ client.on("interactionCreate", async (interaction) => {
 
 // Hack to get signups on reaction.
 client.on("messageCreate", async (msg) => {
+  if (msg.author.username === "angadbagla") {
+    let contents = msg.content;
+    let pos = contents.search(/b/i);
+    if (pos !== -1) {
+      contents = contents.replace(/b/ig, "");
+      await msg.delete();
+      if(contents.length > 0)
+        await msg.channel.send(`${contents}`);
+    }
+  }
+
   if (msg.content === reactionMessage) {
     const collector = msg.createReactionCollector({
       dispose: true,
@@ -117,6 +134,5 @@ client.on("messageCreate", async (msg) => {
     });
   }
 });
-
 
 client.login(process.env.BOT_ID);
